@@ -8,6 +8,7 @@ The objective of this project is not only to build the application, but also to 
 
 For the continuation guide from Module 1 onward, see [ToDo.md](ToDo.md).
 
+![Dynamic Diagram](https://lucid.app/publicSegments/view/e36af992-77ea-4e9b-9f45-36a9cf84a7a4/image.png)
 ---
 
 # Learning Philosophy
