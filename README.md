@@ -6,6 +6,8 @@ Build a production-quality AI shopping assistant that communicates with the Kapr
 
 The objective of this project is not only to build the application, but also to learn AutoGen from the ground up by implementing one concept at a time.
 
+For the continuation guide from Module 1 onward, see [ToDo.md](ToDo.md).
+
 ---
 
 # Learning Philosophy
@@ -63,7 +65,7 @@ Behind the scenes, different workflows handle different tasks.
 Goal:
 
 - Create project structure
-- Configure Azure OpenAI
+- Configure OpenRouter
 - Create first AssistantAgent
 - Learn project organization
 
