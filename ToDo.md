@@ -4,6 +4,8 @@ This file is the handoff guide for continuing development from Module 1 onward.
 
 Current status: Module 0 is working. The repo uses OpenRouter.
 
+Always work on a branch from dev
+
 ## Quick Start
 
 From the repo root:
