@@ -3,7 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-AZURE_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-AZURE_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-AZURE_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
-AZURE_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
+# OpenRouter configuration (used instead of Azure)
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+# Example: https://openrouter.ai/api/v1
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+# Model name to use with OpenRouter (set in .env)
+MODEL = os.getenv("MODEL")

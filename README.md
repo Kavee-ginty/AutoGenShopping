@@ -1,4 +1,3 @@
-# shopping-agent
 # Shopping Agent using AutoGen
 
 ## Goal

@@ -1,18 +1,25 @@
 from autogen_agentchat.agents import AssistantAgent
-from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
+from autogen_core.models import ModelFamily
+from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 from llm_config import (
-    AZURE_API_KEY,
-    AZURE_ENDPOINT,
-    AZURE_DEPLOYMENT,
-    AZURE_API_VERSION,
+    OPENROUTER_API_KEY,
+    OPENROUTER_BASE_URL,
+    MODEL,
 )
 
-model_client = AzureOpenAIChatCompletionClient(
-    azure_endpoint=AZURE_ENDPOINT,
-    api_key=AZURE_API_KEY,
-    azure_deployment=AZURE_DEPLOYMENT,
-    api_version=AZURE_API_VERSION,
+# Use the OpenAI-compatible client against OpenRouter's API
+model_client = OpenAIChatCompletionClient(
+    api_key=OPENROUTER_API_KEY,
+    base_url=OPENROUTER_BASE_URL,
+    model=MODEL,
+    model_info={
+        "vision": False,
+        "function_calling": False,
+        "json_output": False,
+        "structured_output": False,
+        "family": ModelFamily.UNKNOWN,
+    },
 )
 
 shopping_agent = AssistantAgent(
