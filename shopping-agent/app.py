@@ -36,6 +36,8 @@ async def main():
         conversation.append(
             TextMessage(content=assistant_text, source="ShoppingAssistant")
         )
+        if len(conversation) > 20:
+            conversation = conversation[-20:]
 
         print("Assistant:", assistant_text)
 
