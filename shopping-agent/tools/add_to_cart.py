@@ -8,7 +8,7 @@ def add_to_cart(product_name: str, quantity: int = 1) -> str:
         product_name: The name of the product to add.
         quantity: How many to add. Defaults to 1.
     """
-    product_name = product_name.strip()
+    product_name = (product_name or "").strip()
 
     if not product_name:
         return "Which product should I add to the cart?"

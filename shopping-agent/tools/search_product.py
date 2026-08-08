@@ -4,7 +4,7 @@ def search_product(query: str) -> str:
     Args:
         query: The product name to search for.
     """
-    query = query.strip()
+    query = (query or "").strip()
 
     if not query:
         return "What product should I search for?"

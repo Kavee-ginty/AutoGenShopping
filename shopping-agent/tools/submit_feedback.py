@@ -6,7 +6,7 @@ def submit_feedback(product_name: str, rating: int, comment: str = "") -> str:
         rating: A score from 1 to 5.
         comment: Optional written feedback.
     """
-    product_name = product_name.strip()
+    product_name = (product_name or "").strip()
     comment = (comment or "").strip()
 
     if not product_name:
