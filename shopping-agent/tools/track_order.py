@@ -4,7 +4,7 @@ def track_order(order_id: str) -> str:
     Args:
         order_id: The ID of the order to track.
     """
-    order_id = order_id.strip()
+    order_id = (order_id or "").strip()
 
     if not order_id:
         return "Which order would you like to track?"
