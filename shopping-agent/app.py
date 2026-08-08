@@ -1,7 +1,13 @@
 import asyncio
 import sys
+import warnings
 
 from autogen_agentchat.messages import TextMessage
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"Resolved model mismatch:.*",
+)
 
 from agents.shopping_agent import shopping_agent
 
