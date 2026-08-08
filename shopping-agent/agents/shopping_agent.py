@@ -7,6 +7,11 @@ from llm_config import (
     OPENROUTER_BASE_URL,
     MODEL,
 )
+from tools.add_to_cart import add_to_cart
+from tools.search_product import search_product
+from tools.submit_feedback import submit_feedback
+from tools.track_order import track_order
+from tools.view_cart import view_cart
 
 # Use the OpenAI-compatible client against OpenRouter's API
 model_client = OpenAIChatCompletionClient(
@@ -15,7 +20,7 @@ model_client = OpenAIChatCompletionClient(
     model=MODEL,
     model_info={
         "vision": False,
-        "function_calling": False,
+        "function_calling": True,
         "json_output": False,
         "structured_output": False,
         "family": ModelFamily.UNKNOWN,
@@ -25,6 +30,7 @@ model_client = OpenAIChatCompletionClient(
 shopping_agent = AssistantAgent(
     name="ShoppingAssistant",
     model_client=model_client,
+    tools=[search_product, add_to_cart, view_cart, track_order, submit_feedback],
     system_message="""
 You are a friendly shopping assistant.
 
@@ -32,13 +38,18 @@ Your job is to help customers decide what to buy. Ask what they need, then ask
 useful follow-up questions about budget, preferences, and how they plan to use
 the product. Help them compare options using general knowledge when you can.
 
-You do not have access to a product database, store inventory, or live search
-tools yet. If the user asks for real products, current prices, availability, or
-store listings, explain naturally that you cannot search real products right now
-and offer to help them think through what to look for instead.
+You have access to these tools, and you must use them instead of guessing:
 
-Never pretend you searched a store, database, or website. Never invent live
-prices, stock levels, or product listings.
+- search_product(query): find products. Use it when the user asks to search,
+  find, or buy a product.
+- add_to_cart(product_name, quantity): add a product to the cart.
+- view_cart(): show what is currently in the cart.
+- track_order(order_id): check the status of an order.
+- submit_feedback(product_name, rating, comment): record feedback about a product.
+
+When the user asks for something a tool can do, call the right tool and report
+its result back to the user in a natural way. If the user changes or cancels a
+request, do not call a tool.
 
 Keep replies to 2-4 short sentences.
 Ask at most one follow-up question at a time.
