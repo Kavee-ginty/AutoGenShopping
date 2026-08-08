@@ -207,6 +207,7 @@ Agents collaborate only where it improves the system.
 
 Topics:
 
+- UI
 - Better prompts
 - Logging
 - Error handling
