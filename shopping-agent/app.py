@@ -40,6 +40,7 @@ async def main():
             conversation = conversation[-20:]
 
         print("Assistant:", assistant_text)
+        print()
 
 
 if __name__ == "__main__":
