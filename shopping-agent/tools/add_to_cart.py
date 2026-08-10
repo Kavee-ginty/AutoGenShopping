@@ -1,4 +1,9 @@
-from tools.store import CART
+from backend.fake_store import (
+    add_cart_item,
+    find_product,
+    find_products,
+    get_cart_quantity,
+)
 
 
 def add_to_cart(product_name: str, quantity: int = 1) -> str:
@@ -22,6 +27,25 @@ def add_to_cart(product_name: str, quantity: int = 1) -> str:
     if quantity < 1:
         return "Quantity must be at least 1."
 
-    CART.append({"name": product_name, "quantity": quantity})
+    product = find_product(product_name)
 
-    return f"Added {product_name} to the cart."
+    if not product:
+        matches = find_products(product_name)
+
+        if len(matches) > 1:
+            return "I found more than one product. Please use the product ID."
+
+        return "Product not found. Please search for it first."
+
+    cart_quantity = get_cart_quantity(product["id"])
+
+    if cart_quantity + quantity > product["stock"]:
+        available = product["stock"] - cart_quantity
+        if available < 1:
+            return f"{product['name']} is out of stock."
+
+        return f"Only {available} more available for {product['name']}."
+
+    add_cart_item(product["id"], quantity)
+
+    return f"Added {quantity} x {product['name']} to the cart."
