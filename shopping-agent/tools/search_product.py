@@ -1,3 +1,6 @@
+from backend.fake_store import find_products
+
+
 def search_product(query: str) -> str:
     """Search for products by name.
 
@@ -9,5 +12,17 @@ def search_product(query: str) -> str:
     if not query:
         return "What product should I search for?"
 
-    # Dummy results for now. Module 3 adds real fake-store data.
-    return f"Dummy search results for: {query}"
+    products = find_products(query)
+
+    if not products:
+        return "No products found."
+
+    lines = []
+
+    for product in products:
+        lines.append(
+            f"{product['id']}: {product['name']} - "
+            f"LKR {product['price']:,} (stock: {product['stock']})"
+        )
+
+    return "\n".join(lines)

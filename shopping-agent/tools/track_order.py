@@ -1,3 +1,6 @@
+from backend.fake_store import find_order
+
+
 def track_order(order_id: str) -> str:
     """Track an order by ID.
 
@@ -9,5 +12,9 @@ def track_order(order_id: str) -> str:
     if not order_id:
         return "Which order would you like to track?"
 
-    # Dummy status for now. Module 3 adds real order tracking.
-    return f"Order {order_id} is being processed."
+    order = find_order(order_id)
+
+    if not order:
+        return "Order not found."
+
+    return f"{order['id']}: {order['status']} for {order['item']}."
