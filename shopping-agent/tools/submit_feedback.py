@@ -1,3 +1,6 @@
+from backend.fake_store import find_product, save_feedback
+
+
 def submit_feedback(product_name: str, rating: int, comment: str = "") -> str:
     """Submit feedback for a product.
 
@@ -21,10 +24,17 @@ def submit_feedback(product_name: str, rating: int, comment: str = "") -> str:
     if rating < 1 or rating > 5:
         return "Rating must be a number from 1 to 5."
 
+    product = find_product(product_name)
+
+    if not product:
+        return "Product not found. Please search for it first."
+
+    save_feedback(product["id"], rating, comment)
+
     if comment:
         return (
-            f"Thanks! Feedback for {product_name} "
+            f"Thanks! Feedback for {product['name']} "
             f"(rating {rating}/5): {comment}"
         )
 
-    return f"Thanks! Feedback for {product_name} (rating {rating}/5)."
+    return f"Thanks! Feedback for {product['name']} (rating {rating}/5)."
