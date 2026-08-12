@@ -48,6 +48,20 @@ PRODUCTS = [
         "price": 1500,
         "stock": 12,
     },
+    {
+        "id": "kp8",
+        "name": "Royal Ribbon Red Velvet Layer Cake",
+        "category": "cakes",
+        "price": 6200,
+        "stock": 5,
+    },
+    {
+        "id": "kp9",
+        "name": "Heavenly Ribbon Black Forest Gateau Cake",
+        "category": "cakes",
+        "price": 4900,
+        "stock": 8,
+    },
 ]
 
 ORDERS = [
