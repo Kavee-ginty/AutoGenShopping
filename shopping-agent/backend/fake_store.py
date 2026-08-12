@@ -67,18 +67,18 @@ PRODUCTS = [
 ORDERS = [
     {
         "id": "ORD-1001",
-        "status": "Packed and ready for delivery",
         "item": "Classic Chocolate Fudge Gateaux Cake",
+        "status": "Packed and ready for delivery",
     },
     {
         "id": "ORD-1002",
-        "status": "Out for delivery",
         "item": "Lumirosa Pink Rose Chrysanthemum Bouquet",
+        "status": "Out for delivery",
     },
     {
         "id": "ORD-1003",
-        "status": "Delivered",
         "item": "Golden Grocery Treats Hamper",
+        "status": "Delivered",
     },
 ]
 
