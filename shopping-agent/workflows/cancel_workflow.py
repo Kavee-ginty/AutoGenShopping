@@ -66,6 +66,21 @@ def normalize_order_id(raw_id: str) -> str:
     return f"ORD-{digits.zfill(4)}"
 
 
+def format_reason_formally(reason: str) -> str:
+    """Strip, capitalize the first letter, and add a period if needed."""
+    reason = (reason or "").strip()
+
+    if not reason:
+        return "No reason provided."
+
+    reason = reason[0].upper() + reason[1:]
+
+    if reason[-1] not in ".!?":
+        reason = reason + "."
+
+    return reason
+
+
 def is_awaiting_reason() -> bool:
     """Return True if we are waiting for a cancel reason."""
     return _pending_cancel_order_id is not None
@@ -113,6 +128,8 @@ def handle_cancel_reason(message: str) -> str:
         reason = "No reason provided"
     else:
         reason = message.strip()
+
+    reason = format_reason_formally(reason)
 
     try:
         return cancel_order(order_id, reason)
