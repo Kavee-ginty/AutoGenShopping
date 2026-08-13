@@ -32,8 +32,9 @@ def cancel_order(order_id: str, reason: str = "No reason provided") -> str:
 
     if normalized_status in {"out for delivery", "delivered"}:
         return (
-            f"Order {order_number} can no longer be cancelled - "
-            f"it's already {previous_status}."
+            f"Order {order_number} can no longer be cancelled since "
+            f"it's already {previous_status}. If there's an issue with "
+            f"your delivery, please contact customer support."
         )
 
     cancel_order_by_id(order_id, reason)

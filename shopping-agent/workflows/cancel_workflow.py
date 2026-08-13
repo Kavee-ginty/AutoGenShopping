@@ -2,6 +2,8 @@ import re
 
 from tools.cancel_order import cancel_order
 
+_pending_cancel_order_id: str | None = None
+
 ORDER_PREFIX_PATTERN = re.compile(r"\bORD[-\s]?\d+\b", re.IGNORECASE)
 BARE_NUMBER_PATTERN = re.compile(r"\b\d{3,}\b")
 CANCEL_KEYWORD_PATTERN = re.compile(
@@ -64,6 +66,11 @@ def normalize_order_id(raw_id: str) -> str:
     return f"ORD-{digits.zfill(4)}"
 
 
+def is_awaiting_reason() -> bool:
+    """Return True if we are waiting for a cancel reason."""
+    return _pending_cancel_order_id is not None
+
+
 def handle_cancel(message: str) -> str:
     """Extract order ID and cancel the order."""
     message = (message or "").strip()
@@ -81,6 +88,33 @@ def handle_cancel(message: str) -> str:
     try:
         if reason:
             return cancel_order(order_id, reason)
-        return cancel_order(order_id)
+
+        global _pending_cancel_order_id
+        _pending_cancel_order_id = order_id
+        return (
+            "Why would you like to cancel this order? "
+            "(Type 'skip' if you'd prefer not to say.)"
+        )
+    except Exception:
+        return "Sorry, I couldn't cancel that order right now. Please try again."
+
+
+def handle_cancel_reason(message: str) -> str:
+    """Complete a pending cancel using the user's reason."""
+    global _pending_cancel_order_id
+
+    if _pending_cancel_order_id is None:
+        return "I don't have an order waiting to be cancelled."
+
+    order_id = _pending_cancel_order_id
+    _pending_cancel_order_id = None
+
+    if message.strip().lower() == "skip":
+        reason = "No reason provided"
+    else:
+        reason = message.strip()
+
+    try:
+        return cancel_order(order_id, reason)
     except Exception:
         return "Sorry, I couldn't cancel that order right now. Please try again."
