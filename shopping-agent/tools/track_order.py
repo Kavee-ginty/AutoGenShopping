@@ -106,6 +106,11 @@ def track_order(order_id: str) -> str:
 
     add_labeled_line(lines, "Item", order.get("item"))
     add_labeled_line(lines, "Status", status)
+
+    if normalize_status(status) == "cancelled":
+        add_labeled_line(lines, "Cancelled on", order.get("cancelled_date"))
+        add_labeled_line(lines, "Cancellation reason", order.get("cancelled_reason"))
+
     add_labeled_line(lines, "Delivery service", order.get("delivery_service"))
     add_labeled_line(lines, "Estimated delivery", order.get("estimated_delivery"))
 
