@@ -19,6 +19,7 @@ The goal of Module 5 is to move business logic out of `app.py` and into modular,
 5. [Intent Classifier Prerequisite & Router Integration (`app.py`)](#5-intent-classifier-prerequisite--router-integration-apppy)
 6. [Team Coding Rules & Conventions](#6-team-coding-rules--conventions)
 7. [Real-World Execution Trace Example](#7-real-world-execution-trace-example)
+8. [Current Implementation Status & Next Steps Checklist](#8-current-implementation-status--next-steps-checklist)
 
 ---
 
@@ -346,7 +347,7 @@ Instead of passing every user prompt directly to the LLM agent, `app.py`:
 # app.py
 import asyncio
 import sys
-from autogen_agentchat.messages import TextMessage
+import warnings
 
 from workflows.intent import classify_intent
 from workflows.search_workflow import handle_search
@@ -355,51 +356,97 @@ from workflows.tracking_workflow import handle_tracking
 from workflows.feedback_workflow import handle_feedback
 from workflows.chat_workflow import handle_chat
 
+from autogen_agentchat.messages import TextMessage
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"Resolved model mismatch:.*",
+)
+
+from agents.shopping_agent import shopping_agent
+
 sys.stdout.reconfigure(encoding="utf-8")
 
-async def process_user_input(user_text: str, conversation: list) -> str:
-    """Route user input to the correct workflow based on Module 4 intent classification."""
-    
-    # Step 1: Classify user intent via Module 4 LLM Classifier
-    intent = await classify_intent(user_text)
-    
-    # Step 2: Route message to corresponding Module 5 Workflow
-    if intent == "search_product":
-        return handle_search(user_text)
-
-    elif intent in {"add_to_cart", "view_cart"}:
-        return handle_cart(intent, user_text)
-
-    elif intent == "track_order":
-        return handle_tracking(user_text)
-
-    elif intent == "submit_feedback":
-        return handle_feedback(user_text)
-
-    else:
-        # Fallback for 'chat' -> pass conversation history to LLM ShoppingAssistant agent
-        conversation.append(TextMessage(content=user_text, source="User"))
-        reply = await handle_chat(conversation)
-        conversation.append(TextMessage(content=reply, source="ShoppingAssistant"))
-        return reply
 
 async def main():
-    print("Shopping Assistant ready. Type 'exit' to quit.")
+    print("Shopping assistant is ready. Type 'exit' to stop.")
     conversation = []
 
     while True:
         user_text = input("You: ").strip()
+
         if user_text.lower() in {"exit", "quit"}:
             print("Assistant: Bye!")
             break
+
         if not user_text:
+            print("Assistant: Please type a message, or 'exit' to stop.")
             continue
 
-        response = await process_user_input(user_text, conversation)
-        print(f"Assistant: {response}\n")
+        intent = await classify_intent(user_text)
+
+        if intent == "search_product":
+            result = handle_search(user_text)
+            if not result:
+                print("Assistant: [search_workflow is empty/unimplemented]\n")
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        if intent in {"add_to_cart", "view_cart"}:
+            result = handle_cart(intent, user_text)
+            if not result:
+                print("Assistant: [cart_workflow is empty/unimplemented]\n")
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        if intent == "track_order":
+            result = handle_tracking(user_text)
+            if not result:
+                print("Assistant: [tracking_workflow is empty/unimplemented]\n")
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        if intent == "submit_feedback":
+            result = handle_feedback(user_text)
+            if not result:
+                print("Assistant: [feedback_workflow is empty/unimplemented]\n")
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        temp_conversation = conversation + [
+            TextMessage(content=user_text, source="User")
+        ]
+        assistant_text = await handle_chat(temp_conversation)
+
+        if not assistant_text:
+            print("Assistant: [chat_workflow is empty/unimplemented]\n")
+            continue
+
+        conversation.append(TextMessage(content=user_text, source="User"))
+        conversation.append(
+            TextMessage(content=assistant_text, source="ShoppingAssistant")
+        )
+        if len(conversation) > 20:
+            conversation = conversation[-20:]
+
+        print("Assistant:", assistant_text)
+        print()
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, EOFError):
+        print("\nAssistant: Bye!")
+        sys.exit(0)
 ```
 
 ---
@@ -437,3 +484,60 @@ Assistant: ORD-1001: Classic Chocolate Fudge Gateaux Cake - Packed and ready for
 | **Turn 2: `"1001"`** | 1. `classify_intent()` routes `"1001"` $\rightarrow$ `track_order`.<br>2. `handle_tracking()` matches `1001` $\rightarrow$ auto-normalizes to `ORD-1001`.<br>3. `track_order("ORD-1001")` returns status. | **Workflow ID Normalization**: Prevents *"Order not found"* errors when users omit the `ORD-` prefix. |
 
 Happy Coding! 🚀
+
+---
+
+## 8. Current Implementation Status & Next Steps Checklist
+
+### 🟢 Completed Infrastructure Setup
+- [x] Refactored `app.py` to act as central router dispatching classified intents to `workflows/` functions.
+- [x] Implemented and verified [`workflows/chat_workflow.py`](file:///d:/Uni/AutoGen/shopping-agent/workflows/chat_workflow.py) (`handle_chat`) to delegate general queries, greetings, and interactive discovery to `shopping_agent.on_messages()`.
+- [x] Created stub workflow files for remaining tasks in `shopping-agent/workflows/`:
+  - [`workflows/search_workflow.py`](file:///d:/Uni/AutoGen/shopping-agent/workflows/search_workflow.py) (`handle_search`)
+  - [`workflows/cart_workflow.py`](file:///d:/Uni/AutoGen/shopping-agent/workflows/cart_workflow.py) (`handle_cart`)
+  - [`workflows/tracking_workflow.py`](file:///d:/Uni/AutoGen/shopping-agent/workflows/tracking_workflow.py) (`handle_tracking`)
+  - [`workflows/feedback_workflow.py`](file:///d:/Uni/AutoGen/shopping-agent/workflows/feedback_workflow.py) (`handle_feedback`)
+- [x] Refined intent classification rules in `agents/intent_classifier_agent.py` so open-ended gift requests (e.g., *"I am looking for a birthday gift"*) route to `chat` for interactive discovery rather than immediate database search.
+- [x] Added graceful empty-result guards in `app.py` (`if not result:`) to prevent Pydantic `ValidationError` crashes while workflows are unimplemented.
+- [x] Added `KeyboardInterrupt` / `EOFError` exception handling in `app.py` so `Ctrl+C` exits cleanly without error tracebacks.
+
+---
+
+### ⏳ Developer Next Steps (4 Remaining Tasks)
+
+Complete the function implementations inside the 4 remaining stub files in `shopping-agent/workflows/` following the blueprints in Section 4:
+
+#### Step 1: Search Workflow (`workflows/search_workflow.py`)
+- Import `search_product`: `from tools.search_product import search_product`
+- Strip noise words (`"search for"`, `"find"`, `"buy"`, `"look for"`) from input string.
+- Validate query non-emptiness; return prompt asking for product name if empty.
+- Call `search_product(query)` and return formatted results along with a prompt asking the user which item to pick or compare.
+- **Verification**: Run `python app.py` and test `"search for fudge cake"`.
+
+#### Step 2: Cart Workflow (`workflows/cart_workflow.py`)
+- Import tools: `from tools.add_to_cart import add_to_cart`, `from tools.view_cart import view_cart`
+- If `intent == "view_cart"`, return `view_cart()`.
+- For `add_to_cart`: extract quantity using regex `\b(\d+)\b` (default 1), strip action phrases (`"add to cart"`, `"add"`), clean product name, and call `add_to_cart(product_name, quantity)`.
+- Confirm item addition and prompt the user to continue shopping or proceed to checkout.
+- **Verification**: Test `"add 2 fudge cake to cart"` followed by `"view my cart"`.
+
+#### Step 3: Tracking Workflow (`workflows/tracking_workflow.py`)
+- Import `track_order`: `from tools.track_order import track_order`
+- Extract Order ID via regex `(ORD-\d{4}|\b\d{4}\b)`.
+- Normalize digits (e.g. `1001` $\rightarrow$ `ORD-1001`).
+- Prompt if Order ID is missing, otherwise call `track_order(order_id)`.
+- **Verification**: Test `"track order 1001"`.
+
+#### Step 4: Feedback Workflow (`workflows/feedback_workflow.py`)
+- Import `submit_feedback`: `from tools.submit_feedback import submit_feedback`
+- Extract 1–5 star rating integer, target product name, and review comment text.
+- Call `submit_feedback(product_name, rating, comment)`.
+- **Verification**: Test `"5 stars for fudge cake tasted amazing"`.
+
+---
+
+### 🚀 Completion Criteria for Module 5
+1. All 5 workflow handlers return accurate tool responses for valid inputs and friendly error messages for invalid inputs.
+2. `workflows/` functions **only** import from `tools/`, never directly from `backend/fake_store.py`.
+3. Application passes all interactive terminal checks without throwing unhandled exceptions.
+4. Ready to move on to **Module 6: Kapruka MCP Integration**!

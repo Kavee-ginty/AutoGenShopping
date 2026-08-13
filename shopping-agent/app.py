@@ -2,6 +2,13 @@ import asyncio
 import sys
 import warnings
 
+from workflows.intent import classify_intent
+from workflows.search_workflow import handle_search
+from workflows.cart_workflow import handle_cart
+from workflows.tracking_workflow import handle_tracking
+from workflows.feedback_workflow import handle_feedback
+from workflows.chat_workflow import handle_chat
+
 from autogen_agentchat.messages import TextMessage
 
 warnings.filterwarnings(
@@ -47,9 +54,60 @@ async def main():
             print("Assistant: Please type a message, or 'exit' to stop.")
             continue
 
-        conversation.append(TextMessage(content=user_text, source="User"))
+        intent = await classify_intent(user_text)
+        print("Detected intent:", intent)
 
-        assistant_text = await get_assistant_reply(conversation)
+        if intent == "search_product":
+            result = handle_search(user_text)
+            if not result:
+                print("Assistant: [search_workflow is empty/unimplemented]")
+                print()
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        if intent in {"add_to_cart", "view_cart"}:
+            result = handle_cart(intent, user_text)
+            if not result:
+                print("Assistant: [cart_workflow is empty/unimplemented]")
+                print()
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        if intent == "track_order":
+            result = handle_tracking(user_text)
+            if not result:
+                print("Assistant: [tracking_workflow is empty/unimplemented]")
+                print()
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        if intent == "submit_feedback":
+            result = handle_feedback(user_text)
+            if not result:
+                print("Assistant: [feedback_workflow is empty/unimplemented]")
+                print()
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        temp_conversation = conversation + [
+            TextMessage(content=user_text, source="User")
+        ]
+        assistant_text = await handle_chat(temp_conversation)
+
+        if not assistant_text:
+            print("Assistant: [chat_workflow is empty/unimplemented]")
+            print()
+            continue
+
+        conversation.append(TextMessage(content=user_text, source="User"))
         conversation.append(
             TextMessage(content=assistant_text, source="ShoppingAssistant")
         )
@@ -61,4 +119,8 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, EOFError):
+        print("\nAssistant: Bye!")
+        sys.exit(0)
