@@ -1,3 +1,5 @@
+from datetime import date
+
 PRODUCTS = [
     {
         "id": "kp1",
@@ -217,6 +219,41 @@ def find_order(order_id: str) -> dict | None:
             return order
 
     return None
+
+
+INELIGIBLE_CANCEL_STATUSES = {
+    "out for delivery",
+    "delivered",
+    "cancelled",
+}
+
+
+def cancel_order_by_id(order_id: str) -> dict | None:
+    order = find_order(order_id)
+
+    if order is None:
+        return None
+
+    status = (order.get("status") or "").strip().lower()
+
+    if status in INELIGIBLE_CANCEL_STATUSES:
+        return order
+
+    order["status"] = "Cancelled"
+
+    history = order.get("tracking_history")
+    if not isinstance(history, list):
+        history = []
+        order["tracking_history"] = history
+
+    history.append(
+        {
+            "date": date.today().isoformat(),
+            "update": "Order cancelled by customer",
+        }
+    )
+
+    return order
 
 
 def save_feedback(product_id: str, rating: int, comment: str) -> None:
