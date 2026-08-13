@@ -69,16 +69,40 @@ ORDERS = [
         "id": "ORD-1001",
         "item": "Classic Chocolate Fudge Gateaux Cake",
         "status": "Packed and ready for delivery",
+        "order_date": "2026-08-10",
+        "estimated_delivery": "2026-08-14",
+        "delivery_service": "Kapruka Delivery",
+        "tracking_history": [
+            {"date": "2026-08-10", "update": "Order placed"},
+            {"date": "2026-08-11", "update": "Preparing order"},
+            {"date": "2026-08-12", "update": "Packed and ready for delivery"},
+        ],
     },
     {
         "id": "ORD-1002",
         "item": "Lumirosa Pink Rose Chrysanthemum Bouquet",
         "status": "Out for delivery",
+        "order_date": "2026-08-09",
+        "estimated_delivery": "2026-08-13",
+        "delivery_service": "Domex",
+        "tracking_history": [
+            {"date": "2026-08-09", "update": "Order packed"},
+            {"date": "2026-08-10", "update": "Handed to courier"},
+            {"date": "2026-08-13", "update": "Out for delivery"},
+        ],
     },
     {
         "id": "ORD-1003",
         "item": "Golden Grocery Treats Hamper",
         "status": "Delivered",
+        "order_date": "2026-08-06",
+        "estimated_delivery": "2026-08-11",
+        "delivery_service": "Pronto",
+        "tracking_history": [
+            {"date": "2026-08-08", "update": "Packed and ready for delivery"},
+            {"date": "2026-08-10", "update": "Out for delivery"},
+            {"date": "2026-08-11", "update": "Delivered"},
+        ],
     },
 ]
 
