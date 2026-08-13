@@ -228,7 +228,9 @@ INELIGIBLE_CANCEL_STATUSES = {
 }
 
 
-def cancel_order_by_id(order_id: str) -> dict | None:
+def cancel_order_by_id(
+    order_id: str, reason: str = "No reason provided"
+) -> dict | None:
     order = find_order(order_id)
 
     if order is None:
@@ -239,7 +241,11 @@ def cancel_order_by_id(order_id: str) -> dict | None:
     if status in INELIGIBLE_CANCEL_STATUSES:
         return order
 
+    today = date.today().isoformat()
+
     order["status"] = "Cancelled"
+    order["cancelled_reason"] = reason
+    order["cancelled_date"] = today
 
     history = order.get("tracking_history")
     if not isinstance(history, list):
@@ -248,8 +254,8 @@ def cancel_order_by_id(order_id: str) -> dict | None:
 
     history.append(
         {
-            "date": date.today().isoformat(),
-            "update": "Order cancelled by customer",
+            "date": today,
+            "update": f"Order cancelled by customer - {reason}",
         }
     )
 
