@@ -1,8 +1,10 @@
 import re
 
 from tools.cancel_order import cancel_order
+from workflows.order_context import get_last_mentioned_order_id, remember_order_id
 
 _pending_cancel_order_id: str | None = None
+_pending_needs_order_id: bool = False
 
 ORDER_PREFIX_PATTERN = re.compile(r"\bORD[-\s]?\d+\b", re.IGNORECASE)
 BARE_NUMBER_PATTERN = re.compile(r"\b\d{3,}\b")
@@ -15,6 +17,23 @@ REASON_PATTERN = re.compile(
     re.IGNORECASE,
 )
 NEARBY_KEYWORD_WINDOW = 40
+
+COMMON_FORMAL_REASONS = {
+    "too late delivery": "Delayed delivery.",
+    "late delivery": "Delayed delivery.",
+    "delivery too late": "Delayed delivery.",
+    "delivery is late": "Delayed delivery.",
+    "delayed delivery": "Delayed delivery.",
+    "changed my mind": "Change of mind.",
+    "change my mind": "Change of mind.",
+    "ordered by mistake": "Order placed by mistake.",
+    "wrong order": "Incorrect order placed.",
+    "duplicate order": "Duplicate order.",
+    "no longer needed": "Item no longer required.",
+    "not needed anymore": "Item no longer required.",
+    "too expensive": "Price concerns.",
+    "found cheaper": "Found a better price elsewhere.",
+}
 
 
 def has_nearby_cancel_keyword(message: str, number_start: int) -> bool:
@@ -67,11 +86,25 @@ def normalize_order_id(raw_id: str) -> str:
 
 
 def format_reason_formally(reason: str) -> str:
-    """Strip, capitalize the first letter, and add a period if needed."""
+    """Rewrite common informal reasons into formal wording."""
     reason = (reason or "").strip()
 
     if not reason:
         return "No reason provided."
+
+    key = reason.lower().rstrip(".!?")
+
+    if key in COMMON_FORMAL_REASONS:
+        return COMMON_FORMAL_REASONS[key]
+
+    if "late" in key and "deliver" in key:
+        return "Delayed delivery."
+
+    if "mind" in key and ("change" in key or "changed" in key):
+        return "Change of mind."
+
+    if "mistake" in key or "wrong order" in key:
+        return "Order placed by mistake."
 
     reason = reason[0].upper() + reason[1:]
 
@@ -81,6 +114,11 @@ def format_reason_formally(reason: str) -> str:
     return reason
 
 
+def is_awaiting_order_id() -> bool:
+    """Return True if we asked for an Order ID and are waiting for it."""
+    return _pending_needs_order_id
+
+
 def is_awaiting_reason() -> bool:
     """Return True if we are waiting for a cancel reason."""
     return _pending_cancel_order_id is not None
@@ -88,27 +126,44 @@ def is_awaiting_reason() -> bool:
 
 def handle_cancel(message: str) -> str:
     """Extract order ID and cancel the order."""
+    global _pending_cancel_order_id, _pending_needs_order_id
+
     message = (message or "").strip()
+    prefix_matches = ORDER_PREFIX_PATTERN.findall(message)
+
+    if len(prefix_matches) > 1:
+        _pending_needs_order_id = True
+        return (
+            "I found more than one order ID. "
+            "Which order would you like to cancel?"
+        )
+
     raw_id = extract_order_id(message)
 
     if not raw_id:
-        return (
-            "Please provide your Order ID (e.g. ORD-1001) "
-            "so I can cancel it."
-        )
+        last_id = get_last_mentioned_order_id()
+        if last_id:
+            raw_id = last_id
+        else:
+            _pending_needs_order_id = True
+            return (
+                "Please provide your Order ID (e.g. ORD-1001) "
+                "so I can cancel it."
+            )
 
+    _pending_needs_order_id = False
     order_id = normalize_order_id(raw_id)
+    remember_order_id(order_id)
     reason = extract_cancel_reason(message)
 
     try:
         if reason:
-            return cancel_order(order_id, reason)
+            return cancel_order(order_id, format_reason_formally(reason))
 
-        global _pending_cancel_order_id
         _pending_cancel_order_id = order_id
         return (
-            "Why would you like to cancel this order? "
-            "(Type 'skip' if you'd prefer not to say.)"
+            "Kindly provide a valid reason for the cancellation of "
+            f"order {order_id}."
         )
     except Exception:
         return "Sorry, I couldn't cancel that order right now. Please try again."

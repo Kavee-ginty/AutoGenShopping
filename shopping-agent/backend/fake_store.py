@@ -255,7 +255,7 @@ def cancel_order_by_id(
     history.append(
         {
             "date": today,
-            "update": f"Order cancelled by customer - {reason}",
+            "update": f"Order cancelled by customer (REASON :- {reason})",
         }
     )
 

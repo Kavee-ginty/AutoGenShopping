@@ -9,6 +9,7 @@ from workflows.tracking_workflow import handle_tracking
 from workflows.cancel_workflow import (
     handle_cancel,
     handle_cancel_reason,
+    is_awaiting_order_id,
     is_awaiting_reason,
 )
 from workflows.feedback_workflow import handle_feedback
@@ -61,6 +62,12 @@ async def main():
 
         if is_awaiting_reason():
             result = handle_cancel_reason(user_text)
+            print("Assistant:", result)
+            print()
+            continue
+
+        if is_awaiting_order_id():
+            result = handle_cancel(user_text)
             print("Assistant:", result)
             print()
             continue

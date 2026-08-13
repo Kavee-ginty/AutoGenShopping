@@ -1,6 +1,7 @@
 import re
 
 from tools.track_order import track_order
+from workflows.order_context import remember_order_id
 
 ORDER_PREFIX_PATTERN = re.compile(r"\bORD[-\s]?\d+\b", re.IGNORECASE)
 BARE_NUMBER_PATTERN = re.compile(r"\b\d{3,}\b")
@@ -61,6 +62,11 @@ def handle_tracking(message: str) -> str:
     order_id = normalize_order_id(raw_id)
 
     try:
-        return track_order(order_id)
+        result = track_order(order_id)
     except Exception:
         return "Sorry, I couldn't check that order right now. Please try again."
+
+    if result != "Order not found.":
+        remember_order_id(order_id)
+
+    return result
