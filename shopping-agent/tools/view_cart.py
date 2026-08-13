@@ -1,4 +1,4 @@
-from backend.fake_store import get_cart_items
+from backend.fake_store import get_cart_items, get_cart_total
 
 
 def view_cart() -> str:
@@ -18,6 +18,8 @@ def view_cart() -> str:
         )
         total += item["line_total"]
 
+    total = get_cart_total()
+    lines.append(f"Subtotal: LKR {total:,}")
     lines.append(f"Total: LKR {total:,}")
 
     return "\n".join(lines)

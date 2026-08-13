@@ -7,6 +7,8 @@ VALID_INTENTS = {
     "search_product",
     "add_to_cart",
     "view_cart",
+    "remove_from_cart",
+    "clear_cart",
     "track_order",
     "submit_feedback",
     "chat",

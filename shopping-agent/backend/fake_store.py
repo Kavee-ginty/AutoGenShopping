@@ -148,6 +148,30 @@ def add_cart_item(product_id: str, quantity: int) -> None:
     CART.append({"product_id": product_id, "quantity": quantity})
 
 
+def remove_cart_item(product_id: str, quantity: int) -> None:
+    for item in CART:
+        if item["product_id"] == product_id:
+            item["quantity"] -= quantity
+            if item["quantity"] <= 0:
+                CART.remove(item)
+            return
+
+
+def clear_cart() -> None:
+    CART.clear()
+
+
+def get_cart_total() -> int:
+    total = 0
+
+    for item in CART:
+        product = find_product(item["product_id"])
+        if product:
+            total += product["price"] * item["quantity"]
+
+    return total
+
+
 def get_cart_items() -> list[dict]:
     cart_items = []
 

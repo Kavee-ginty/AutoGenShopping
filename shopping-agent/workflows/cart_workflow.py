@@ -2,6 +2,8 @@ import re
 from typing import Optional
 
 from tools.add_to_cart import add_to_cart
+from tools.clear_cart import clear_cart_items
+from tools.remove_from_cart import remove_from_cart
 from tools.view_cart import view_cart
 
 try:
@@ -37,49 +39,54 @@ def _find_product_id_in_text(message: str) -> Optional[str]:
 
 
 def handle_cart(intent: str, message: str) -> str:
-    """Handle viewing and adding items to the shopping cart.
-
-    - `view_cart` calls the `view_cart()` tool.
-    - `add_to_cart` parses product id/name and optional quantity, resolves
-      "this/that" using `product_context`, and calls `add_to_cart()` tool.
-    """
+    """Handle viewing, adding, and removing items in the cart."""
     if intent == "view_cart":
         return view_cart()
 
-    # Only add_to_cart remains
-    quantity = _extract_quantity(message)
+    if intent == "clear_cart":
+        return clear_cart_items()
 
-    # Prefer explicit product id like kp11
+    quantity = _extract_quantity(message)
     product_id = _find_product_id_in_text(message)
 
-    # If user used a demonstrative (this/that) and no id found, try context
     if not product_id and re.search(r"\b(this|that|the one|that cake|that item)\b", message, flags=re.IGNORECASE):
         product_id = get_last_mentioned_product_id()
 
         if not product_id:
             suggestions = get_suggested_product_ids()
             if not suggestions:
-                return "Which product would you like to add? Please specify a product ID (e.g., kp11)."
+                return "Which product would you like to update? Please specify a product ID (e.g., kp11)."
             if len(suggestions) > 1:
                 return "Which one? Use the product ID (e.g. kp11)."
 
-    # If still no product id, attempt to extract a name-like phrase
     product_text = product_id
     if not product_text:
-        # Remove common action phrases
         product_text = message.lower()
-        for phrase in ["add to cart", "add", "put in cart", "buy", "to cart"]:
+        for phrase in [
+            "add to cart",
+            "add",
+            "put in cart",
+            "buy",
+            "to cart",
+            "remove from cart",
+            "remove",
+            "delete",
+            "take out",
+            "from cart",
+        ]:
             product_text = product_text.replace(phrase, "")
-        # Remove numeric quantity tokens
         product_text = re.sub(r"\b\d+\b", "", product_text).strip()
 
     if not product_text:
+        if intent == "remove_from_cart":
+            return "Please specify which product you would like to remove from the cart. Use a product ID like kp11 if possible."
         return "Please specify which product you would like to add to your cart. Use a product ID like kp11 if possible."
 
-    # Call the tool (it handles unknown product names/ids and quantity validation)
     try:
-        result = add_to_cart(product_text, quantity)
+        if intent == "remove_from_cart":
+            return remove_from_cart(product_text, quantity)
+        return add_to_cart(product_text, quantity)
     except Exception:
-        result = "Sorry, I couldn't add that product to the cart right now."
-
-    return result
+        if intent == "remove_from_cart":
+            return "Sorry, I couldn't remove that product from the cart right now."
+        return "Sorry, I couldn't add that product to the cart right now."
