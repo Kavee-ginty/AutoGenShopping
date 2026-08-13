@@ -6,6 +6,7 @@ from workflows.intent import classify_intent
 from workflows.search_workflow import handle_search
 from workflows.cart_workflow import handle_cart
 from workflows.tracking_workflow import handle_tracking
+from workflows.cancel_workflow import handle_cancel
 from workflows.feedback_workflow import handle_feedback
 from workflows.chat_workflow import handle_chat
 
@@ -81,6 +82,16 @@ async def main():
             result = handle_tracking(user_text)
             if not result:
                 print("Assistant: [tracking_workflow is empty/unimplemented]")
+                print()
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        if intent == "cancel_order":
+            result = handle_cancel(user_text)
+            if not result:
+                print("Assistant: [cancel_workflow is empty/unimplemented]")
                 print()
                 continue
             print("Assistant:", result)
