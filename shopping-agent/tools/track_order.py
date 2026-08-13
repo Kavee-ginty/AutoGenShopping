@@ -45,7 +45,7 @@ def format_arrival_line(
     estimated_delivery: str | None, status: str | None
 ) -> str | None:
     """Return a plain-text arrival countdown, or None to skip."""
-    if normalize_status(status) == "delivered" or not estimated_delivery:
+    if normalize_status(status) in {"delivered", "cancelled"} or not estimated_delivery:
         return None
 
     try:
@@ -71,6 +71,9 @@ def format_cancel_line(status: str | None) -> str | None:
         return None
 
     normalized_status = normalize_status(status)
+
+    if normalized_status == "cancelled":
+        return "This order has already been cancelled."
 
     if normalized_status in {"out for delivery", "delivered"}:
         return "This order can no longer be cancelled."
