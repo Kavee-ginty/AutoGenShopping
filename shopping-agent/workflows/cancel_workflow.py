@@ -8,6 +8,10 @@ CANCEL_KEYWORD_PATTERN = re.compile(
     r"#|\b(?:order|cancel|ord)\b",
     re.IGNORECASE,
 )
+REASON_PATTERN = re.compile(
+    r"(?:because|since|\bas\b|reason:)\s*(.+)",
+    re.IGNORECASE,
+)
 NEARBY_KEYWORD_WINDOW = 40
 
 
@@ -35,6 +39,19 @@ def extract_order_id(message: str) -> str | None:
     return number_matches[0].group(0)
 
 
+def extract_cancel_reason(message: str) -> str | None:
+    """Find an optional cancel reason after because, since, as, or reason:."""
+    match = REASON_PATTERN.search(message)
+    if not match:
+        return None
+
+    reason = match.group(1).strip()
+    if not reason:
+        return None
+
+    return reason
+
+
 def normalize_order_id(raw_id: str) -> str:
     """Convert a raw ID match into ORD-XXXX format."""
     raw_id = raw_id.upper().strip()
@@ -59,8 +76,11 @@ def handle_cancel(message: str) -> str:
         )
 
     order_id = normalize_order_id(raw_id)
+    reason = extract_cancel_reason(message)
 
     try:
+        if reason:
+            return cancel_order(order_id, reason)
         return cancel_order(order_id)
     except Exception:
         return "Sorry, I couldn't cancel that order right now. Please try again."

@@ -6,11 +6,12 @@ def normalize_status(status: str | None) -> str:
     return (status or "").strip().lower()
 
 
-def cancel_order(order_id: str) -> str:
+def cancel_order(order_id: str, reason: str = "No reason provided") -> str:
     """Cancel an order by ID.
 
     Args:
         order_id: The ID of the order to cancel.
+        reason: Why the customer is cancelling the order.
     """
     if not isinstance(order_id, str) or not order_id.strip():
         return "Which order would you like to cancel?"
@@ -35,6 +36,6 @@ def cancel_order(order_id: str) -> str:
             f"it's already {previous_status}."
         )
 
-    cancel_order_by_id(order_id)
+    cancel_order_by_id(order_id, reason)
 
     return f"Order {order_number} has been cancelled successfully."
