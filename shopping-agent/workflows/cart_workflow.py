@@ -1,6 +1,7 @@
 import re
 from typing import Optional
 
+from backend.fake_store import checkout_cart
 from tools.add_to_cart import add_to_cart
 from tools.clear_cart import clear_cart_items
 from tools.remove_from_cart import remove_from_cart
@@ -41,10 +42,16 @@ def _find_product_id_in_text(message: str) -> Optional[str]:
 def handle_cart(intent: str, message: str) -> str:
     """Handle viewing, adding, and removing items in the cart."""
     if intent == "view_cart":
+        message_text = (message or "").lower()
+        if "total" in message_text and "subtotal" not in message_text:
+            return view_cart(show_items=False)
         return view_cart()
 
     if intent == "clear_cart":
         return clear_cart_items()
+
+    if intent == "checkout":
+        return checkout_cart()
 
     quantity = _extract_quantity(message)
     product_id = _find_product_id_in_text(message)

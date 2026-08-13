@@ -161,6 +161,15 @@ def clear_cart() -> None:
     CART.clear()
 
 
+def checkout_cart() -> str:
+    total = get_cart_total()
+    if total <= 0:
+        return "Your cart is empty. There is nothing to pay for."
+
+    clear_cart()
+    return f"Payment successful. Total charged: LKR {total:,}. Your cart is now empty."
+
+
 def get_cart_total() -> int:
     total = 0
 

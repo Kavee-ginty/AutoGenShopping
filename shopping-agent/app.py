@@ -67,7 +67,7 @@ async def main():
             print()
             continue
 
-        if intent in {"add_to_cart", "view_cart", "remove_from_cart", "clear_cart"}:
+        if intent in {"add_to_cart", "view_cart", "remove_from_cart", "clear_cart", "checkout"}:
             result = handle_cart(intent, user_text)
             if not result:
                 print("Assistant: [cart_workflow is empty/unimplemented]")
