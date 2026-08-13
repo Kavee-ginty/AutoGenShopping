@@ -15,6 +15,7 @@ Return only one of these intent names:
 - add_to_cart
 - view_cart
 - track_order
+- cancel_order
 - submit_feedback
 - chat
 
@@ -23,6 +24,7 @@ Rules:
 - Use add_to_cart when the user wants to add an item to the cart.
 - Use view_cart when the user wants to see the cart or checkout basket.
 - Use track_order when the user asks about an order or delivery status.
+- Use cancel_order when the user wants to cancel an existing order (not just check its status).
 - Use submit_feedback when the user wants to review, rate, complain about, or give feedback.
 - Use chat for greetings, open-ended gift requests or advice (e.g., "I am looking for a birthday gift", "what should I buy?"), recommendations, general questions, or anything that requires interactive follow-up questions.
 

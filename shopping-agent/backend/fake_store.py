@@ -1,3 +1,5 @@
+from datetime import date
+
 PRODUCTS = [
     {
         "id": "kp1",
@@ -67,18 +69,56 @@ PRODUCTS = [
 ORDERS = [
     {
         "id": "ORD-1001",
-        "status": "Packed and ready for delivery",
         "item": "Classic Chocolate Fudge Gateaux Cake",
+        "status": "Packed and ready for delivery",
+        "order_date": "2026-08-10",
+        "estimated_delivery": "2026-08-14",
+        "delivery_service": "Kapruka Delivery",
+        "tracking_history": [
+            {"date": "2026-08-10", "update": "Order placed"},
+            {"date": "2026-08-11", "update": "Preparing order"},
+            {"date": "2026-08-12", "update": "Packed and ready for delivery"},
+        ],
     },
     {
         "id": "ORD-1002",
-        "status": "Out for delivery",
         "item": "Lumirosa Pink Rose Chrysanthemum Bouquet",
+        "status": "Out for delivery",
+        "order_date": "2026-08-09",
+        "estimated_delivery": "2026-08-13",
+        "delivery_service": "Domex",
+        "tracking_history": [
+            {"date": "2026-08-09", "update": "Order packed"},
+            {"date": "2026-08-10", "update": "Handed to courier"},
+            {"date": "2026-08-13", "update": "Out for delivery"},
+        ],
     },
     {
         "id": "ORD-1003",
-        "status": "Delivered",
         "item": "Golden Grocery Treats Hamper",
+        "status": "Delivered",
+        "order_date": "2026-08-06",
+        "estimated_delivery": "2026-08-11",
+        "delivery_service": "Pronto",
+        "tracking_history": [
+            {"date": "2026-08-08", "update": "Packed and ready for delivery"},
+            {"date": "2026-08-10", "update": "Out for delivery"},
+            {"date": "2026-08-11", "update": "Delivered"},
+        ],
+    },
+    {
+        "id": "ORD-1004",
+        "item": "Sanford 6 In 1 Multifunctional Air Fryer",
+        "status": "Delayed",
+        "delay_reason": "Weather conditions",
+        "order_date": "2026-08-08",
+        "estimated_delivery": "2026-08-16",
+        "delivery_service": "Koombiyo",
+        "tracking_history": [
+            {"date": "2026-08-08", "update": "Order packed"},
+            {"date": "2026-08-09", "update": "Handed to courier"},
+            {"date": "2026-08-12", "update": "Delayed due to weather conditions"},
+        ],
     },
 ]
 
@@ -179,6 +219,47 @@ def find_order(order_id: str) -> dict | None:
             return order
 
     return None
+
+
+INELIGIBLE_CANCEL_STATUSES = {
+    "out for delivery",
+    "delivered",
+    "cancelled",
+}
+
+
+def cancel_order_by_id(
+    order_id: str, reason: str = "No reason provided"
+) -> dict | None:
+    order = find_order(order_id)
+
+    if order is None:
+        return None
+
+    status = (order.get("status") or "").strip().lower()
+
+    if status in INELIGIBLE_CANCEL_STATUSES:
+        return order
+
+    today = date.today().isoformat()
+
+    order["status"] = "Cancelled"
+    order["cancelled_reason"] = reason
+    order["cancelled_date"] = today
+
+    history = order.get("tracking_history")
+    if not isinstance(history, list):
+        history = []
+        order["tracking_history"] = history
+
+    history.append(
+        {
+            "date": today,
+            "update": f"Order cancelled by customer (REASON :- {reason})",
+        }
+    )
+
+    return order
 
 
 def save_feedback(product_id: str, rating: int, comment: str) -> None:
