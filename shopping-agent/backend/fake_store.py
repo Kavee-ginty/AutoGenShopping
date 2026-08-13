@@ -104,6 +104,20 @@ ORDERS = [
             {"date": "2026-08-11", "update": "Delivered"},
         ],
     },
+    {
+        "id": "ORD-1004",
+        "item": "Sanford 6 In 1 Multifunctional Air Fryer",
+        "status": "Delayed",
+        "delay_reason": "Weather conditions",
+        "order_date": "2026-08-08",
+        "estimated_delivery": "2026-08-16",
+        "delivery_service": "Koombiyo",
+        "tracking_history": [
+            {"date": "2026-08-08", "update": "Order packed"},
+            {"date": "2026-08-09", "update": "Handed to courier"},
+            {"date": "2026-08-12", "update": "Delayed due to weather conditions"},
+        ],
+    },
 ]
 
 CART = []

@@ -1,3 +1,5 @@
+from datetime import date
+
 from backend.fake_store import find_order
 
 
@@ -34,6 +36,41 @@ def format_history_lines(history: list) -> list[str]:
     return lines
 
 
+def format_arrival_line(
+    estimated_delivery: str | None, status: str | None
+) -> str | None:
+    """Return a plain-text arrival countdown, or None to skip."""
+    if status == "Delivered" or not estimated_delivery:
+        return None
+
+    try:
+        delivery_date = date.fromisoformat(estimated_delivery)
+    except ValueError:
+        return None
+
+    days = (delivery_date - date.today()).days
+
+    if days > 1:
+        return f"Arrives in {days} days"
+    if days == 1:
+        return "Arrives in 1 day"
+    if days == 0:
+        return "Arriving today"
+
+    return "Delivery date passed"
+
+
+def format_cancel_line(status: str | None) -> str | None:
+    """Return cancel-eligibility text based on order status."""
+    if not status:
+        return None
+
+    if status in {"Out for delivery", "Delivered"}:
+        return "This order can no longer be cancelled."
+
+    return "This order can still be cancelled."
+
+
 def track_order(order_id: str) -> str:
     """Track an order by ID.
 
@@ -51,15 +88,27 @@ def track_order(order_id: str) -> str:
         return "Order not found."
 
     lines: list[str] = []
+    status = order.get("status")
 
     order_number = order.get("id")
     if order_number:
         lines.append(f"Order {order_number}")
 
     add_labeled_line(lines, "Item", order.get("item"))
-    add_labeled_line(lines, "Status", order.get("status"))
+    add_labeled_line(lines, "Status", status)
     add_labeled_line(lines, "Delivery service", order.get("delivery_service"))
     add_labeled_line(lines, "Estimated delivery", order.get("estimated_delivery"))
+
+    if status == "Delayed":
+        add_labeled_line(lines, "Delay reason", order.get("delay_reason"))
+
+    arrival_line = format_arrival_line(order.get("estimated_delivery"), status)
+    if arrival_line:
+        lines.append(arrival_line)
+
+    cancel_line = format_cancel_line(status)
+    if cancel_line:
+        lines.append(cancel_line)
 
     history = order.get("tracking_history")
     if isinstance(history, list):
