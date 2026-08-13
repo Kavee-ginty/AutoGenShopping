@@ -3,7 +3,7 @@ import sys
 import warnings
 
 from workflows.intent import classify_intent
-from workflows.search_workflow import handle_search
+from workflows.search_workflow import handle_search, is_awaiting_search
 from workflows.cart_workflow import handle_cart
 from workflows.tracking_workflow import handle_tracking
 from workflows.cancel_workflow import (
@@ -68,6 +68,12 @@ async def main():
 
         if is_awaiting_order_id():
             result = handle_cancel(user_text)
+            print("Assistant:", result)
+            print()
+            continue
+
+        if is_awaiting_search(user_text):
+            result = handle_search(user_text)
             print("Assistant:", result)
             print()
             continue

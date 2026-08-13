@@ -7,6 +7,8 @@ PRODUCTS = [
         "category": "cakes",
         "price": 5600,
         "stock": 6,
+        "occasions": ["birthday", "party"],
+        "for": ["boy", "girl", "child", "brother", "sister"],
     },
     {
         "id": "kp2",
@@ -14,6 +16,8 @@ PRODUCTS = [
         "category": "flowers",
         "price": 14900,
         "stock": 4,
+        "occasions": ["birthday", "wedding", "party"],
+        "for": ["girl", "sister", "mom"],
     },
     {
         "id": "kp3",
@@ -21,6 +25,8 @@ PRODUCTS = [
         "category": "grocery hampers",
         "price": 25300,
         "stock": 3,
+        "occasions": ["party"],
+        "for": ["mom", "dad"],
     },
     {
         "id": "kp4",
@@ -28,6 +34,8 @@ PRODUCTS = [
         "category": "electronics",
         "price": 47500,
         "stock": 5,
+        "occasions": [],
+        "for": ["mom", "dad"],
     },
     {
         "id": "kp5",
@@ -35,6 +43,8 @@ PRODUCTS = [
         "category": "soft toys",
         "price": 3500,
         "stock": 10,
+        "occasions": ["birthday"],
+        "for": ["boy", "girl", "child", "brother", "sister"],
     },
     {
         "id": "kp6",
@@ -42,6 +52,8 @@ PRODUCTS = [
         "category": "gift sets",
         "price": 5900,
         "stock": 8,
+        "occasions": [],
+        "for": ["dad"],
     },
     {
         "id": "kp7",
@@ -49,6 +61,8 @@ PRODUCTS = [
         "category": "home and lifestyle",
         "price": 1500,
         "stock": 12,
+        "occasions": [],
+        "for": ["mom", "dad"],
     },
     {
         "id": "kp8",
@@ -56,6 +70,8 @@ PRODUCTS = [
         "category": "cakes",
         "price": 6200,
         "stock": 5,
+        "occasions": ["birthday", "wedding", "party"],
+        "for": ["girl", "sister"],
     },
     {
         "id": "kp9",
@@ -63,6 +79,44 @@ PRODUCTS = [
         "category": "cakes",
         "price": 4900,
         "stock": 8,
+        "occasions": ["birthday", "party"],
+        "for": ["boy", "girl", "child"],
+    },
+    {
+        "id": "kp10",
+        "name": "Mini Chocolate Cupcake Box",
+        "category": "cakes",
+        "price": 1800,
+        "stock": 15,
+        "occasions": ["birthday", "party"],
+        "for": ["boy", "girl", "child", "brother", "sister"],
+    },
+    {
+        "id": "kp11",
+        "name": "Kids Cartoon Birthday Cake",
+        "category": "cakes",
+        "price": 2500,
+        "stock": 7,
+        "occasions": ["birthday"],
+        "for": ["boy", "child", "brother"],
+    },
+    {
+        "id": "kp12",
+        "name": "Simple Vanilla Tea Cake",
+        "category": "cakes",
+        "price": 1500,
+        "stock": 10,
+        "occasions": ["birthday", "party"],
+        "for": ["boy", "girl", "child", "brother", "sister"],
+    },
+    {
+        "id": "kp13",
+        "name": "Butter Icing Birthday Cake",
+        "category": "cakes",
+        "price": 2900,
+        "stock": 6,
+        "occasions": ["birthday"],
+        "for": ["boy", "girl", "child", "brother"],
     },
 ]
 
@@ -123,11 +177,46 @@ ORDERS = [
 ]
 
 CART = []
-FEEDBACK = []
+FEEDBACK = [
+    {
+        "product_id": "kp1",
+        "rating": 5,
+        "comment": "Rich chocolate, perfect for birthdays.",
+    },
+    {
+        "product_id": "kp10",
+        "rating": 5,
+        "comment": "Great value cupcakes for a kids party.",
+    },
+    {
+        "product_id": "kp11",
+        "rating": 4,
+        "comment": "My little brother loved the cartoon design.",
+    },
+    {
+        "product_id": "kp12",
+        "rating": 4,
+        "comment": "Simple and tasty. Good for a small budget.",
+    },
+]
 
 
 def clean_text(value: str) -> str:
     return (value or "").lower().strip()
+
+
+def matches_category(product: dict, category: str) -> bool:
+    category = clean_text(category)
+    name = clean_text(product["name"])
+    product_category = clean_text(product["category"])
+    short_category = category.rstrip("s")
+
+    return (
+        category in name
+        or category in product_category
+        or short_category in name
+        or short_category in product_category
+    )
 
 
 def find_products(query: str) -> list[dict]:
@@ -146,6 +235,60 @@ def find_products(query: str) -> list[dict]:
             results.append(product)
 
     return results
+
+
+def find_products_filtered(
+    category: str,
+    budget_max: int | None = None,
+    occasion: str | None = None,
+    for_who: str | None = None,
+    limit: int = 5,
+) -> list[dict]:
+    category = clean_text(category)
+    occasion = clean_text(occasion) if occasion else ""
+    for_who = clean_text(for_who) if for_who else ""
+
+    results = []
+
+    for product in PRODUCTS:
+        if category and not matches_category(product, category):
+            continue
+
+        if budget_max is not None and product["price"] > budget_max:
+            continue
+
+        if occasion:
+            occasions = [clean_text(item) for item in product.get("occasions", [])]
+            if occasion not in occasions:
+                continue
+
+        if for_who:
+            audience = [clean_text(item) for item in product.get("for", [])]
+            if for_who not in audience:
+                continue
+
+        results.append(product)
+        if len(results) >= limit:
+            break
+
+    return results
+
+
+def get_product_feedback(product_id: str) -> list[dict]:
+    return [item for item in FEEDBACK if item["product_id"] == product_id]
+
+
+def average_rating(product_id: str) -> float | None:
+    items = get_product_feedback(product_id)
+
+    if not items:
+        return None
+
+    total = 0
+    for item in items:
+        total += item["rating"]
+
+    return total / len(items)
 
 
 def find_product(product_name: str) -> dict | None:
