@@ -1,3 +1,5 @@
+import asyncio
+
 from autogen_agentchat.messages import TextMessage
 
 from agents.intent_classifier_agent import intent_classifier_agent
@@ -11,18 +13,19 @@ VALID_INTENTS = {
     "clear_cart",
     "checkout",
     "track_order",
+    "cancel_order",
     "submit_feedback",
     "chat",
 }
 
 
-async def classify_intent(message: str) -> str:
+async def classify_intent(message: str) -> str | None:
     """Use the intent classifier agent to choose the correct workflow."""
     if not message.strip():
         return "chat"
 
     text = message.lower().strip()
-    if "pay now" in text or "pay" in text and "cart" in text:
+    if "pay now" in text or ("pay" in text and "cart" in text):
         return "checkout"
     if "checkout" in text or "place order" in text or "complete order" in text:
         return "checkout"
@@ -33,14 +36,21 @@ async def classify_intent(message: str) -> str:
     if "view cart" in text or "show cart" in text or "cart total" in text:
         return "view_cart"
 
-    response = await intent_classifier_agent.on_messages(
-        [TextMessage(content=message, source="User")],
-        cancellation_token=None,
-    )
+    for attempt in range(3):
+        try:
+            response = await intent_classifier_agent.on_messages(
+                [TextMessage(content=message, source="User")],
+                cancellation_token=None,
+            )
 
-    intent = response.chat_message.content.strip().lower()
+            intent = response.chat_message.content.strip().lower()
 
-    if intent not in VALID_INTENTS:
-        return "chat"
+            if intent not in VALID_INTENTS:
+                return "chat"
 
-    return intent
+            return intent
+        except Exception:
+            if attempt < 2:
+                await asyncio.sleep(10)
+
+    return None
