@@ -9,6 +9,9 @@ VALID_INTENTS = {
     "search_product",
     "add_to_cart",
     "view_cart",
+    "remove_from_cart",
+    "clear_cart",
+    "checkout",
     "track_order",
     "cancel_order",
     "submit_feedback",
@@ -20,6 +23,18 @@ async def classify_intent(message: str) -> str | None:
     """Use the intent classifier agent to choose the correct workflow."""
     if not message.strip():
         return "chat"
+
+    text = message.lower().strip()
+    if "pay now" in text or ("pay" in text and "cart" in text):
+        return "checkout"
+    if "checkout" in text or "place order" in text or "complete order" in text:
+        return "checkout"
+    if "clear cart" in text or "empty cart" in text:
+        return "clear_cart"
+    if "remove" in text and "cart" in text:
+        return "remove_from_cart"
+    if "view cart" in text or "show cart" in text or "cart total" in text:
+        return "view_cart"
 
     for attempt in range(3):
         try:

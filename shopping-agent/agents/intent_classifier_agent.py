@@ -14,6 +14,9 @@ Return only one of these intent names:
 - search_product
 - add_to_cart
 - view_cart
+- remove_from_cart
+- clear_cart
+- checkout
 - track_order
 - cancel_order
 - submit_feedback
@@ -23,6 +26,9 @@ Rules:
 - Use search_product when the user asks for a product, item name, or category (e.g., "search for cakes", "I want a cake", "find air fryer", "show me soft toys").
 - Use add_to_cart when the user wants to add an item to the cart.
 - Use view_cart when the user wants to see the cart or checkout basket.
+- Use remove_from_cart when the user wants to remove, delete, take out, or reduce an item in the cart.
+- Use clear_cart when the user wants to empty the whole cart or remove everything from the cart.
+- Use checkout when the user wants to pay, complete the order, or place the current cart order.
 - Use track_order when the user asks about an order or delivery status.
 - Use cancel_order when the user wants to cancel an existing order (not just check its status).
 - Use submit_feedback when the user wants to review, rate, complain about, or give feedback.

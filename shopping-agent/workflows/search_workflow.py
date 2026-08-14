@@ -87,14 +87,34 @@ def reset_search_state() -> None:
 def is_awaiting_search(message: str = "") -> bool:
     """Return True if search is waiting for a follow-up answer."""
     awaiting = _search_state["awaiting"]
+    text = (message or "").lower().strip()
 
-    if awaiting in {"budget", "occasion"}:
-        return True
+    if awaiting == "budget":
+        if extract_budget(text) is not None:
+            return True
+        if extract_occasion(text) or extract_for_who(text):
+            return True
+        if extract_category(text, fallback=False) is not None:
+            return True
+        _search_state["awaiting"] = None
+        return False
+
+    if awaiting == "occasion":
+        if extract_occasion(text) or extract_for_who(text):
+            return True
+        if extract_category(text, fallback=False) is not None:
+            return True
+        _search_state["awaiting"] = None
+        return False
 
     if awaiting == "details":
-        text = (message or "").lower()
         if "cart" in text or text.startswith("add "):
             return False
+        if is_details_request(text):
+            return True
+        return False
+
+    if _search_state["category"] and extract_budget(text) is not None:
         return True
 
     return False
@@ -110,7 +130,7 @@ def strip_prefixes(message: str) -> str:
     return query
 
 
-def extract_category(message: str) -> str | None:
+def extract_category(message: str, fallback: bool = False) -> str | None:
     text = (message or "").lower()
 
     for word, category in CATEGORY_WORDS:
@@ -124,15 +144,18 @@ def extract_category(message: str) -> str | None:
     if is_details_request(text):
         return None
 
-    leftover = strip_prefixes(text)
-    leftover = re.sub(r"\d[\d,]*", " ", leftover)
-    leftover = leftover.replace("lkr", " ").replace("rs", " ")
-    leftover = leftover.replace("under", " ").replace("below", " ").replace("around", " ")
-    leftover = leftover.replace("my", " ").replace("little", " ")
-    leftover = " ".join(leftover.split())
+    has_prefix = any(text.startswith(prefix) for prefix in PREFIXES)
 
-    if leftover:
-        return leftover
+    if has_prefix or fallback:
+        leftover = strip_prefixes(text)
+        leftover = re.sub(r"\d[\d,]*", " ", leftover)
+        leftover = leftover.replace("lkr", " ").replace("rs", " ")
+        leftover = leftover.replace("under", " ").replace("below", " ").replace("around", " ")
+        leftover = leftover.replace("my", " ").replace("little", " ")
+        leftover = " ".join(leftover.split())
+
+        if leftover:
+            return leftover
 
     return None
 
@@ -191,7 +214,7 @@ def looks_like_new_search(message: str) -> bool:
     if is_details_request(text):
         return False
 
-    category = extract_category(text)
+    category = extract_category(text, fallback=False)
 
     if not category:
         return False
@@ -207,8 +230,8 @@ def looks_like_new_search(message: str) -> bool:
     return False
 
 
-def update_state_from_message(message: str) -> None:
-    category = extract_category(message)
+def update_state_from_message(message: str, fallback_category: bool = False) -> None:
+    category = extract_category(message, fallback=fallback_category)
     budget = extract_budget(message)
     occasion = extract_occasion(message)
     for_who = extract_for_who(message)
@@ -244,7 +267,7 @@ def run_filtered_search() -> str:
         return "I couldn't search for products right now. Please try again."
 
     if not products:
-        _search_state["awaiting"] = "details"
+        _search_state["awaiting"] = None
         remember_products([])
         return (
             "No products found for those filters. "
@@ -316,7 +339,7 @@ def handle_search(message: str) -> str:
     ):
         return handle_product_details(message)
 
-    new_category = extract_category(message)
+    new_category = extract_category(message, fallback=True)
     if (
         _search_state["category"]
         and new_category
@@ -324,7 +347,7 @@ def handle_search(message: str) -> str:
     ):
         reset_search_state()
 
-    update_state_from_message(message)
+    update_state_from_message(message, fallback_category=True)
 
     if not _search_state["category"]:
         _search_state["awaiting"] = None
