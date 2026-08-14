@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 PRODUCTS = [
     {
         "id": "kp1",
@@ -83,7 +86,19 @@ ORDERS = [
 ]
 
 CART = []
-FEEDBACK = []
+
+# Persist feedback to a simple JSON file so entries survive restarts
+FEEDBACK_FILE = Path(__file__).parent / "feedback.json"
+try:
+    if FEEDBACK_FILE.exists():
+        with open(FEEDBACK_FILE, "r", encoding="utf-8") as f:
+            FEEDBACK = json.load(f)
+            if not isinstance(FEEDBACK, list):
+                FEEDBACK = []
+    else:
+        FEEDBACK = []
+except Exception:
+    FEEDBACK = []
 
 
 def clean_text(value: str) -> str:
@@ -181,11 +196,20 @@ def find_order(order_id: str) -> dict | None:
     return None
 
 
+
 def save_feedback(product_id: str, rating: int, comment: str) -> None:
-    FEEDBACK.append(
-        {
-            "product_id": product_id,
-            "rating": rating,
-            "comment": comment,
-        }
-    )
+    entry = {
+        "product_id": product_id,
+        "rating": rating,
+        "comment": comment,
+    }
+    FEEDBACK.append(entry)
+    # persist to disk; best-effort (don't crash on IO errors)
+    try:
+        FEEDBACK_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(FEEDBACK_FILE, "w", encoding="utf-8") as f:
+            json.dump(FEEDBACK, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+

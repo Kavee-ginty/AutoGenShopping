@@ -6,7 +6,7 @@ from workflows.intent import classify_intent
 from workflows.search_workflow import handle_search
 from workflows.cart_workflow import handle_cart
 from workflows.tracking_workflow import handle_tracking
-from workflows.feedback_workflow import handle_feedback
+from workflows.feedback_workflow import handle_feedback, handle_feedback_async, is_awaiting_feedback
 from workflows.chat_workflow import handle_chat
 
 from autogen_agentchat.messages import TextMessage
@@ -54,6 +54,21 @@ async def main():
             print("Assistant: Please type a message, or 'exit' to stop.")
             continue
 
+        # If a feedback collection is already in progress, route message to feedback handler
+        if is_awaiting_feedback():
+            try:
+                result = await handle_feedback_async(user_text)
+            except Exception:
+                result = handle_feedback(user_text)
+
+            if not result:
+                print("Assistant: [feedback_workflow is empty/unimplemented]")
+                print()
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
         intent = await classify_intent(user_text)
         print("Detected intent:", intent)
 
@@ -88,7 +103,15 @@ async def main():
             continue
 
         if intent == "submit_feedback":
-            result = handle_feedback(user_text)
+            # Use async feedback handler (it will fall back to sync heuristics)
+            try:
+                from workflows.feedback_workflow import handle_feedback_async
+
+                result = await handle_feedback_async(user_text)
+            except Exception:
+                # fallback to the synchronous handler
+                result = handle_feedback(user_text)
+
             if not result:
                 print("Assistant: [feedback_workflow is empty/unimplemented]")
                 print()
