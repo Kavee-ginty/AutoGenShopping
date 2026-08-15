@@ -3,10 +3,20 @@ import sys
 import warnings
 
 from workflows.intent import classify_intent
-from workflows.search_workflow import handle_search
+from workflows.search_workflow import handle_search, is_awaiting_search
 from workflows.cart_workflow import handle_cart
 from workflows.tracking_workflow import handle_tracking
-from workflows.feedback_workflow import handle_feedback, handle_feedback_async, is_awaiting_feedback
+from workflows.cancel_workflow import (
+    handle_cancel,
+    handle_cancel_reason,
+    is_awaiting_order_id,
+    is_awaiting_reason,
+)
+from workflows.feedback_workflow import (
+    handle_feedback,
+    handle_feedback_async,
+    is_awaiting_feedback,
+)
 from workflows.chat_workflow import handle_chat
 
 from autogen_agentchat.messages import TextMessage
@@ -54,7 +64,18 @@ async def main():
             print("Assistant: Please type a message, or 'exit' to stop.")
             continue
 
-        # If a feedback collection is already in progress, route message to feedback handler
+        if is_awaiting_reason():
+            result = handle_cancel_reason(user_text)
+            print("Assistant:", result)
+            print()
+            continue
+
+        if is_awaiting_order_id():
+            result = handle_cancel(user_text)
+            print("Assistant:", result)
+            print()
+            continue
+
         if is_awaiting_feedback():
             try:
                 result = await handle_feedback_async(user_text)
@@ -69,7 +90,21 @@ async def main():
             print()
             continue
 
+        if is_awaiting_search(user_text):
+            result = handle_search(user_text)
+            print("Assistant:", result)
+            print()
+            continue
+
         intent = await classify_intent(user_text)
+        if not intent:
+            print(
+                "Assistant: Sorry, the assistant is unavailable right now. "
+                "Please try again."
+            )
+            print()
+            continue
+
         print("Detected intent:", intent)
 
         if intent == "search_product":
@@ -96,6 +131,16 @@ async def main():
             result = handle_tracking(user_text)
             if not result:
                 print("Assistant: [tracking_workflow is empty/unimplemented]")
+                print()
+                continue
+            print("Assistant:", result)
+            print()
+            continue
+
+        if intent == "cancel_order":
+            result = handle_cancel(user_text)
+            if not result:
+                print("Assistant: [cancel_workflow is empty/unimplemented]")
                 print()
                 continue
             print("Assistant:", result)
