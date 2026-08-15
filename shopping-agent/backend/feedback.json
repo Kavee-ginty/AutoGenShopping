@@ -8,5 +8,10 @@
     "product_id": "kp4",
     "rating": 5,
     "comment": ""
+  },
+  {
+    "product_id": "kp1",
+    "rating": 4,
+    "comment": "yes, it was deliciios"
   }
 ]
