@@ -12,7 +12,11 @@ from workflows.cancel_workflow import (
     is_awaiting_order_id,
     is_awaiting_reason,
 )
-from workflows.feedback_workflow import handle_feedback
+from workflows.feedback_workflow import (
+    handle_feedback,
+    handle_feedback_async,
+    is_awaiting_feedback,
+)
 from workflows.chat_workflow import handle_chat
 
 from autogen_agentchat.messages import TextMessage
@@ -68,6 +72,20 @@ async def main():
 
         if is_awaiting_order_id():
             result = handle_cancel(user_text)
+            print("Assistant:", result)
+            print()
+            continue
+
+        if is_awaiting_feedback():
+            try:
+                result = await handle_feedback_async(user_text)
+            except Exception:
+                result = handle_feedback(user_text)
+
+            if not result:
+                print("Assistant: [feedback_workflow is empty/unimplemented]")
+                print()
+                continue
             print("Assistant:", result)
             print()
             continue
@@ -130,7 +148,15 @@ async def main():
             continue
 
         if intent == "submit_feedback":
-            result = handle_feedback(user_text)
+            # Use async feedback handler (it will fall back to sync heuristics)
+            try:
+                from workflows.feedback_workflow import handle_feedback_async
+
+                result = await handle_feedback_async(user_text)
+            except Exception:
+                # fallback to the synchronous handler
+                result = handle_feedback(user_text)
+
             if not result:
                 print("Assistant: [feedback_workflow is empty/unimplemented]")
                 print()

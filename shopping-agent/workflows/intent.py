@@ -53,4 +53,16 @@ async def classify_intent(message: str) -> str | None:
             if attempt < 2:
                 await asyncio.sleep(10)
 
-    return None
+    # Keyword-based fallback if LLM is unavailable
+    msg = message.lower()
+    if any(x in msg for x in ("search", "find", "looking for", "look for")):
+        return "search_product"
+    if any(x in msg for x in ("add to cart", "add", "cart")) and "feedback" not in msg:
+        return "add_to_cart"
+    if any(x in msg for x in ("view cart", "show cart", "my cart")):
+        return "view_cart"
+    if any(x in msg for x in ("track", "tracking", "order status", "where is my")):
+        return "track_order"
+    if any(x in msg for x in ("rate", "rating", "feedback", "give feedback", "review")):
+        return "submit_feedback"
+    return "chat"
