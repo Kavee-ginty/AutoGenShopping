@@ -15,10 +15,12 @@ This guide provides a comprehensive step-by-step roadmap for developers transiti
 6. [Detailed Implementation Specifications](#6-detailed-implementation-specifications)
    - [MCP Dependencies & Configuration Setup](#mcp-dependencies--configuration-setup)
    - [Startup Mode Selector (`app.py` & `config.py`)](#startup-mode-selector-apppy--configpy)
-   - [Kapruka MCP Server (`mcp/kapruka_server.py`)](#kapruka-mcp-server-mcpkapruka_serverpy)
-   - [MCP Client Bridge (`mcp/mcp_client.py`)](#mcp-client-bridge-mcpmcp_clientpy)
+   - [Base Kapruka MCP Server (`mcp/kapruka_server.py`)](#base-kapruka-mcp-server-mcpkapruka_serverpy)
+   - [Base MCP Client Bridge (`mcp/mcp_client.py`)](#base-mcp-client-bridge-mcpmcp_clientpy)
+   - [Developer A Module (`mcp/catalog_tools.py`)](#developer-a-module-mcpcatalog_toolspy)
+   - [Developer B Module (`mcp/order_cart_tools.py`)](#developer-b-module-mcporder_cart_toolspy)
    - [Dual-Mode Tools Layer (`tools/*.py`)](#dual-mode-tools-layer-toolspy)
-7. [Parallel Developer Workload Division (Zero-Conflict Strategy)](#7-parallel-developer-workload-division-zero-conflict-strategy)
+7. [Zero-Dependency Parallel Workload Division (No Blocking)](#7-zero-dependency-parallel-workload-division-no-blocking)
 8. [Interactive Conversation & Execution Trace Example](#8-interactive-conversation--execution-trace-example)
 9. [Team Coding Rules & Conventions](#9-team-coding-rules--conventions)
 10. [Verification & Checklist](#10-verification--checklist)
@@ -53,47 +55,6 @@ As defined in [`AGENTS.md`](file:///d:/Uni/AutoGen/AGENTS.md), our primary goals
 - **Option 1 (`fake_store`)**: Calls `backend/fake_store.py` directly inside Python tools for fast local testing without network/server overhead.
 - **Option 2 (`mcp`)**: Routes tool invocations through `mcp/mcp_client.py` via JSON-RPC Stdio transport to `mcp/kapruka_server.py`.
 
-### Modular Data Flow Architecture
-
-```text
-               User Input
-                   │
-                   ▼
-     app.py (Select Mode 1 or 2)
-                   │
-                   ▼
-     workflows/intent.py (Module 4)
-      [Intent Classification via LLM]
-                   │
-   ┌───────────────┼───────────────┬───────────────┬───────────────┐
-   ▼               ▼               ▼               ▼               ▼
-search_workflow  cart_workflow  tracking_wf     feedback_wf     chat_workflow
- (Module 5)      (Module 5)     (Module 5)      (Module 5)      (Module 5)
-   │               │               │               │               │
-   └───────────────┼───────────────┴───────────────┘               │
-                   ▼                                               │
-             tools/*.py (Module 2)                                 │
-   (search_product, add_to_cart, track_order, etc.)                │
-                   │                                               │
-        ┌──────────┴──────────┐                                    │
-        │ Check DATA_MODE     │                                    │
-        └─────┬─────────┬─────┘                                    │
-    (1: local)         (2: mcp)                                    │
-        │                 │                                        │
-        ▼                 ▼ [JSON-RPC over Stdio]                  │
-backend/fake_store.py   mcp/mcp_client.py                          │
-                          │                                        │
-                          ▼                                        │
-             mcp/kapruka_server.py (Module 6)                      │
-                          │                                        │
-                          ▼                                        │
-              Kapruka E-Commerce Backend                           │
-                                                                   │
-                   └───────────────────┬───────────────────────────┘
-                                       ▼
-                              User Text Response
-```
-
 ---
 
 ## 3. What is Model Context Protocol (MCP)?
@@ -119,10 +80,10 @@ Module 6 introduces a new directory `shopping-agent/mcp/` containing:
 ```text
 shopping-agent/mcp/
     __init__.py
-    kapruka_server.py    # Exposes Kapruka shopping tools via FastMCP / MCP SDK
-    catalog_tools.py     # Product search & feedback MCP tool implementations (Dev A)
-    order_cart_tools.py  # Cart management & order tracking MCP tool implementations (Dev B)
-    mcp_client.py        # Client connection bridge (Dev B)
+    kapruka_server.py    # Shared FastMCP server entrypoint (Base Skeleton)
+    mcp_client.py        # Shared Stdio client bridge (Base Skeleton)
+    catalog_tools.py     # Product search & details MCP tools (Dev A)
+    order_cart_tools.py  # Cart management, orders, tracking & feedback MCP tools (Dev B)
 ```
 
 ---
@@ -133,7 +94,6 @@ shopping-agent/mcp/
 
 In [`config.py`](file:///d:/Uni/AutoGen/shopping-agent/config.py):
 ```python
-# config.py
 import os
 
 DATA_MODE = os.getenv("DATA_MODE", "fake_store").lower().strip()
@@ -145,23 +105,118 @@ def set_data_mode(choice: str) -> str:
     return DATA_MODE
 ```
 
-In [`app.py`](file:///d:/Uni/AutoGen/shopping-agent/app.py):
+---
+
+### Base Kapruka MCP Server (`mcp/kapruka_server.py`)
+
 ```python
-def select_data_mode() -> str:
-    print("=" * 55)
-    print("Select Shopping Data Backend:")
-    print("  1. Local (Fake Store)")
-    print("  2. MCP (Kapruka MCP Integration)")
-    print("=" * 55)
-    choice = input("Select mode (1 or 2): ").strip()
-    return set_data_mode(choice)
+# mcp/kapruka_server.py
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("Kapruka Shopping Service")
+
+# Dev A registers catalog tools:
+# from mcp.catalog_tools import register_catalog_tools
+# register_catalog_tools(mcp)
+
+# Dev B registers order/cart tools:
+# from mcp.order_cart_tools import register_order_cart_tools
+# register_order_cart_tools(mcp)
+
+if __name__ == "__main__":
+    mcp.run()
+```
+
+---
+
+### Base MCP Client Bridge (`mcp/mcp_client.py`)
+
+```python
+# mcp/mcp_client.py
+import asyncio
+import sys
+from pathlib import Path
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+SERVER_SCRIPT = str(Path(__file__).parent / "kapruka_server.py")
+
+async def call_kapruka_tool(tool_name: str, arguments: dict):
+    """Invoke a tool on the Kapruka MCP Server via stdio transport."""
+    server_params = StdioServerParameters(
+        command=sys.executable,
+        args=[SERVER_SCRIPT],
+    )
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool(tool_name, arguments)
+            return result.content
+```
+
+---
+
+### Developer A Module (`mcp/catalog_tools.py`)
+
+```python
+# mcp/catalog_tools.py
+from backend.fake_store import find_products_filtered, find_product
+
+def register_catalog_tools(mcp):
+    @mcp.tool()
+    def search_kapruka_products(query: str, budget_max: int = None) -> list[dict]:
+        """Search products by name/category and budget."""
+        return find_products_filtered(category=query, budget_max=budget_max)
+
+    @mcp.tool()
+    def get_kapruka_product_details(product_name: str) -> dict:
+        """Fetch details for a specific product name or ID."""
+        product = find_product(product_name)
+        return product or {"error": "Product not found"}
+```
+
+---
+
+### Developer B Module (`mcp/order_cart_tools.py`)
+
+```python
+# mcp/order_cart_tools.py
+from backend.fake_store import (
+    add_cart_item,
+    get_cart_items,
+    find_order,
+    cancel_order_by_id,
+    save_feedback,
+)
+
+def register_order_cart_tools(mcp):
+    @mcp.tool()
+    def manage_kapruka_cart(action: str, product_id: str = None, quantity: int = 1) -> str:
+        """Add items or view cart contents."""
+        if action == "add":
+            add_cart_item(product_id, quantity)
+            return f"Added {quantity} x {product_id} to Kapruka cart."
+        elif action == "view":
+            items = get_cart_items()
+            return str(items) if items else "Your cart is empty."
+        return "Invalid action."
+
+    @mcp.tool()
+    def get_kapruka_order_status(order_id: str) -> dict:
+        """Fetch tracking status for order ID."""
+        order = find_order(order_id)
+        return order or {"error": f"Order {order_id} not found"}
+
+    @mcp.tool()
+    def submit_kapruka_feedback(product_id: str, rating: int, comment: str) -> str:
+        """Submit customer feedback and rating."""
+        save_feedback(product_id, rating, comment)
+        return f"Feedback saved for {product_id} with rating {rating}/5."
 ```
 
 ---
 
 ### Dual-Mode Tools Layer (`tools/*.py`)
-
-Tool functions in `tools/` check `DATA_MODE` to dispatch between Fake Store vs. MCP:
 
 ```python
 # tools/search_product.py
@@ -191,36 +246,35 @@ def search_product(query: str, budget_max: int | None = None) -> str:
 
 ---
 
-## 7. Parallel Developer Workload Division (Zero-Conflict Strategy)
+## 7. Zero-Dependency Parallel Workload Division (No Blocking)
 
 ```text
-                                     dev Branch
-                                         │
-                 ┌───────────────────────┴───────────────────────┐
-                 ▼                                               ▼
-   feature/mcp-catalog-feedback                    feature/mcp-client-orders
-         (Developer A)                                   (Developer B)
-                 │                                               │
-   ├── mcp/catalog_tools.py                        ├── mcp/mcp_client.py
-   ├── tools/search_product.py                     ├── mcp/order_cart_tools.py
-   ├── tools/get_product_details.py                ├── tools/add_to_cart.py
-   └── tools/submit_feedback.py                    ├── tools/view_cart.py
-                                                   ├── tools/track_order.py
-                                                   └── tools/cancel_order.py
-                 │                                               │
-                 └───────────────────────┬───────────────────────┘
-                                         ▼
-                                  No File Overlap
-                               (0 Git Merge Conflicts)
+                             Base Skeleton on dev
+                 (mcp/kapruka_server.py & mcp/mcp_client.py)
+                                      │
+                 ┌────────────────────┴────────────────────┐
+                 ▼                                         ▼
+   feature/mcp-catalog-search                 feature/mcp-cart-orders
+         (Developer A)                              (Developer B)
+                 │                                         │
+   ├── mcp/catalog_tools.py                   ├── mcp/order_cart_tools.py
+   ├── tools/search_product.py                ├── tools/add_to_cart.py
+   └── tools/get_product_details.py           ├── tools/view_cart.py
+                                              ├── tools/remove_from_cart.py
+                                              ├── tools/clear_cart.py
+                                              ├── tools/track_order.py
+                                              ├── tools/cancel_order.py
+                                              └── tools/submit_feedback.py
+                 │                                         │
+                 └────────────────────┬────────────────────┘
+                                      ▼
+                               0 Line Overlap
+                            (0 Dependency Blocking)
 ```
 
 ---
 
 ## 8. Interactive Conversation & Execution Trace Example
-
-The following trace shows a real terminal chat session running in **MCP Mode (Option 2)** once Module 6 is complete:
-
-### Terminal Trace
 
 ```text
 $ python app.py
@@ -240,8 +294,6 @@ Detected intent: search_product
 Assistant: 
 kp1: Classic Chocolate Fudge Gateaux Cake - LKR 5,600 (stock: 6)
 kp8: Royal Ribbon Red Velvet Layer Cake - LKR 6,200 (stock: 5)
-kp9: Heavenly Ribbon Black Forest Gateau Cake - LKR 4,900 (stock: 8)
-kp10: Mini Chocolate Cupcake Box - LKR 1,800 (stock: 15)
 
 You: add 2 classic chocolate fudge gateaux cake to cart
 Detected intent: add_to_cart
@@ -256,19 +308,6 @@ Your Shopping Cart (Kapruka MCP Backend):
 - Classic Chocolate Fudge Gateaux Cake (x2) - LKR 11,200
 Total Charged Subtotal: LKR 11,200
 
-You: track order 1001
-Detected intent: track_order
-
-Assistant: 
-Order ORD-1001 (Classic Chocolate Fudge Gateaux Cake):
-Status: Packed and ready for delivery
-Estimated Delivery: 2026-08-14 via Kapruka Delivery
-
-You: 5 stars for fudge cake tasted amazing
-Detected intent: submit_feedback
-
-Assistant: Thank you for your review! Feedback recorded for Classic Chocolate Fudge Gateaux Cake with rating 5/5 stars.
-
 You: exit
 Assistant: Bye!
 ```
@@ -280,12 +319,11 @@ Assistant: Bye!
 1. **Do NOT Delete Fake Store**: Keep `backend/fake_store.py` intact for Option 1 (`DATA_MODE="fake_store"`).
 2. **Strict File Ownership**: Dev A and Dev B touch **only** their assigned files.
 3. **Keep Imports Decoupled**: `workflows/` must **never** import `mcp/` or `backend/`. `tools/` is the single adapter layer.
-4. **Fail Gracefully**: If the MCP server process fails to launch or returns an error, the tool must catch the exception and return a friendly user message.
 
 ---
 
 ## 10. Verification & Checklist
 
-- [ ] Run `python app.py`, select Option `1`, and verify Local (Fake Store) interaction.
-- [ ] Run `python app.py`, select Option `2`, and verify MCP interaction.
-- [ ] Merge `feature/mcp-catalog-feedback` and `feature/mcp-client-orders` into `dev` cleanly with zero merge conflicts.
+- [ ] Commit base skeleton `mcp/mcp_client.py` and `mcp/kapruka_server.py` to `dev`.
+- [ ] Dev A and Dev B branch from `dev` and work simultaneously with zero blocking.
+- [ ] Merge `feature/mcp-catalog-search` and `feature/mcp-cart-orders` into `dev` cleanly with zero merge conflicts.
