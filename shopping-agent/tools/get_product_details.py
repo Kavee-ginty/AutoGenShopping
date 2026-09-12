@@ -3,6 +3,7 @@ from backend.fake_store import (
     find_product,
     get_product_feedback,
 )
+from config import get_data_mode
 
 
 def _feedback_lines(product: dict) -> list[str]:
@@ -36,6 +37,11 @@ def get_product_details(product_name: str, kind: str = "all") -> str:
 
     if not product_name:
         return "Which product would you like details for?"
+
+    if get_data_mode() == "mcp":
+        from mcp_tools.functions import get_product
+
+        return get_product(product_name)
 
     product = find_product(product_name)
 
