@@ -26,9 +26,29 @@ warnings.filterwarnings(
     message=r"Resolved model mismatch:.*",
 )
 
+from config import set_data_mode, get_data_mode
 from agents.shopping_agent import shopping_agent
 
 sys.stdout.reconfigure(encoding="utf-8")
+
+
+def select_data_mode() -> str:
+    """Prompt user at startup to select between Local (Fake Store) or MCP mode."""
+    print("=" * 55)
+    print("Select Shopping Data Backend:")
+    print("  1. Local (Fake Store)")
+    print("  2. MCP (Kapruka MCP Integration)")
+    print("=" * 55)
+
+    choice = input("Select mode (1 or 2): ").strip()
+    selected = set_data_mode(choice)
+
+    if selected == "mcp":
+        print("--> Mode set to: MCP (Kapruka MCP Integration)\n")
+    else:
+        print("--> Mode set to: Local (Fake Store)\n")
+
+    return selected
 
 
 async def get_assistant_reply(conversation):
@@ -48,6 +68,7 @@ async def get_assistant_reply(conversation):
 
 
 async def main():
+    select_data_mode()
     print("Shopping assistant is ready. Type 'exit' to stop.")
 
     # Keep the full conversation so follow-up messages make sense.
