@@ -1,4 +1,5 @@
 from backend.fake_store import find_products, find_products_filtered
+from config import get_data_mode
 
 
 def format_product_list(products: list[dict]) -> str:
@@ -13,6 +14,21 @@ def format_product_list(products: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _build_mcp_search_query(
+    query: str,
+    occasion: str | None = None,
+    for_who: str | None = None,
+) -> str:
+    parts = [query]
+
+    if occasion:
+        parts.append(occasion)
+    if for_who:
+        parts.append(for_who)
+
+    return " ".join(parts)
+
+
 def search_matching_products(
     query: str,
     budget_max: int | None = None,
@@ -25,6 +41,19 @@ def search_matching_products(
 
     if not query:
         return []
+
+    if get_data_mode() == "mcp":
+        from mcp_tools.functions import search_products_list
+
+        search_query = _build_mcp_search_query(query, occasion, for_who)
+        max_price = float(budget_max) if budget_max is not None else 99999999.0
+
+        return search_products_list(
+            search_query=search_query,
+            max_price=max_price,
+            category=query,
+            limit=limit,
+        )
 
     if budget_max is None and not occasion and not for_who:
         return find_products(query)[:limit]
@@ -58,6 +87,19 @@ def search_product(
 
     if not query:
         return "What product should I search for?"
+
+    if get_data_mode() == "mcp":
+        from mcp_tools.functions import search_products
+
+        search_query = _build_mcp_search_query(query, occasion, for_who)
+        max_price = float(budget_max) if budget_max is not None else 99999999.0
+
+        return search_products(
+            search_query=search_query,
+            max_price=max_price,
+            category=query,
+            limit=limit,
+        )
 
     products = search_matching_products(
         query,

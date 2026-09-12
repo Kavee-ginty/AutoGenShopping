@@ -7,6 +7,7 @@ from agents.intent_classifier_agent import intent_classifier_agent
 
 VALID_INTENTS = {
     "search_product",
+    "show_category",
     "add_to_cart",
     "view_cart",
     "remove_from_cart",

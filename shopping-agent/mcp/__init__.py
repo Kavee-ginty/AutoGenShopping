@@ -1,1 +1,0 @@
-# Kapruka MCP Package Directory

@@ -2,3 +2,5 @@ autogen-agentchat
 autogen-ext[openai]
 python-dotenv
 openai
+mcp
+nest_asyncio

@@ -1,6 +1,8 @@
+import re
 from datetime import date
 
 from backend.fake_store import find_order
+from config import get_data_mode
 
 
 def add_labeled_line(lines: list[str], label: str, value: str | None) -> None:
@@ -81,6 +83,20 @@ def format_cancel_line(status: str | None) -> str | None:
     return "This order can still be cancelled."
 
 
+def _mcp_order_number(order_id: str) -> str:
+    """Undo fake-store workflow normalization for Kapruka order numbers."""
+    if re.match(r"^ORD-\d{4}$", order_id, re.IGNORECASE):
+        return order_id
+
+    if re.match(r"^ORD-\d{8}-\d+$", order_id, re.IGNORECASE):
+        return order_id
+
+    if order_id.upper().startswith("ORD-"):
+        return order_id[4:]
+
+    return order_id
+
+
 def track_order(order_id: str) -> str:
     """Track an order by ID.
 
@@ -91,6 +107,11 @@ def track_order(order_id: str) -> str:
         return "Which order would you like to track?"
 
     order_id = order_id.strip()
+
+    if get_data_mode() == "mcp":
+        from mcp_tools.functions import track_order as mcp_track_order
+
+        return mcp_track_order(_mcp_order_number(order_id))
 
     order = find_order(order_id)
 
