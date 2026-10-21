@@ -17,7 +17,10 @@ from workflows.feedback_workflow import (
     handle_feedback_async,
     is_awaiting_feedback,
 )
-from workflows.chat_workflow import handle_chat
+from workflows.chat_workflow import handle_chat, explain_with_report
+from tools.lookup_product_info import lookup_product_info
+from workflows.product_context import get_last_mentioned_product_id
+from backend.fake_store import find_product
 
 from workflows.category_workflow import show_categories
 
@@ -154,7 +157,20 @@ async def main():
             print("Assistant:", result)
             print()
             continue
-            
+
+        if intent == "explain_product":
+            product_id = get_last_mentioned_product_id()
+            product = find_product(product_id) if product_id else None
+            product_name = product["name"] if product else user_text
+
+            print("Looking up:", product_name)
+            report = lookup_product_info(product_name)
+            print(report)
+
+            result = await explain_with_report(user_text, report)
+            print("Assistant:", result)
+            print()
+            continue
 
         if intent in {"add_to_cart", "view_cart", "remove_from_cart", "clear_cart", "checkout"}:
             if data_mode == "mcp":
@@ -218,6 +234,22 @@ async def main():
             print("Assistant:", result)
             print()
             continue
+
+        if intent == "explain_product":
+            product_name = user_text
+            if any(word in user_text.lower() for word in ("this", "that", "it")):
+                product_id = get_last_mentioned_product_id()
+                if product_id:
+                    product = find_product(product_id)
+                    if product:
+                        product_name = product["name"]
+
+            report = lookup_product_info(product_name)
+            result = await explain_with_report(user_text, report)
+            print("Assistant:", result)
+            print()
+            continue
+
 
         temp_conversation = conversation + [
             TextMessage(content=user_text, source="User")

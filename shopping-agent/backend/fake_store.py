@@ -40,11 +40,33 @@ PRODUCTS = [
         "for": ["mom", "dad"],
     },
     {
+        "id": "kp14",
+        "name": "Electric Rice Cooker",
+        "category": "electronics",
+        "price": 8900,
+        "stock": 9,
+        "occasions": [],
+        "for": ["mom", "dad"],
+    },
+    {
         "id": "kp5",
         "name": "Garfield Plush Soft Toy - 16 Inches",
         "category": "soft toys",
         "price": 3500,
-        "stock": 10,
+        "stock": 10,Shopping assistant is ready. Type 'exit' to stop.
+You: search for rice cooker, budget 10000
+Detected intent: search_product
+Assistant: Here are a few matches:
+kp14: Electric Rice Cooker - LKR 8,900 (stock: 9)
+Want stock, rating, or feedback for one of these? Use the product ID.
+
+You: how to use it?
+Detected intent: explain_product
+Looking up: Electric Rice Cooker
+I could not find a clear web summary for Electric Rice Cooker.
+Assistant: I couldn’t find any clear usage instructions for the Electric Rice Cooker in the web report. The available information isn’t enough to explain how to operate it.
+
+
         "occasions": ["birthday"],
         "for": ["boy", "girl", "child", "brother", "sister"],
     },
