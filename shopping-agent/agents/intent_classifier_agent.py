@@ -22,6 +22,7 @@ Return only one of these intent names:
 - cancel_order
 - submit_feedback
 - chat
+- explain_product
 
 Rules:
 - Use search_product when the user asks for a product, item name, or category (e.g., "search for cakes", "I want a cake", "find air fryer", "show me soft toys").
@@ -35,6 +36,7 @@ Rules:
 - Use cancel_order when the user wants to cancel an existing order (not just check its status).
 - Use submit_feedback when the user wants to review, rate, complain about, or give feedback.
 - Use chat for greetings, open-ended gift requests or advice (e.g., "I am looking for a birthday gift", "what should I buy?"), recommendations, general questions, or anything that requires interactive follow-up questions. but if user asking about categories don't use chat, instead use show_category
+- Use explain_product when the user wants to know about a product, item, or category.
 
 Return only the intent name.
 Do not explain your answer.

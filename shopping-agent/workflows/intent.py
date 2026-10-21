@@ -17,6 +17,7 @@ VALID_INTENTS = {
     "cancel_order",
     "submit_feedback",
     "chat",
+    "explain_product",
 }
 
 

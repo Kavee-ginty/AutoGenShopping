@@ -32,6 +32,7 @@ PREFIXES = [
 
 CATEGORY_WORDS = [
     ("air fryer", "air fryer"),
+    ("rice cooker", "rice cooker"),
     ("soft toys", "soft toys"),
     ("soft toy", "soft toys"),
     ("grocery hampers", "grocery hampers"),
@@ -109,6 +110,8 @@ def is_awaiting_search(message: str = "") -> bool:
 
     if awaiting == "details":
         if "cart" in text or text.startswith("add "):
+            return False
+        if any(phrase in text for phrase in ("what does", "how do i use", "how to use")):
             return False
         if is_details_request(text):
             return True
